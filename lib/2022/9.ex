@@ -192,5 +192,47 @@ aoc 2022, 9 do
   end
 
   def p2(input) do
+    steps =
+      input
+      |> String.split("\n", trim: true)
+      |> Enum.map(&String.split(&1, " ", trim: true))
+      |> Enum.flat_map(fn [dir, step] ->
+        Enum.map(1..String.to_integer(step), fn _ -> dir end)
+      end)
+
+    rope = Enum.map(1..9, fn _ -> {0, 0} end)
+
+    {_, _, pos} =
+      Enum.reduce(steps, {{0, 0}, rope, []}, fn dir, {head, knots, pos} ->
+        moved = move_knot_head(head, dir)
+
+        {knots, tail} =
+          Enum.map_reduce(knots, moved, fn knot, prev_knot ->
+            knot = move_knot(prev_knot, knot)
+            {knot, knot}
+          end)
+
+        {moved, knots, [tail | pos]}
+      end)
+
+    pos |> Enum.uniq() |> Enum.count()
+  end
+
+  def move_knot_head({x, y}, "L"), do: {x - 1, y}
+  def move_knot_head({x, y}, "R"), do: {x + 1, y}
+  def move_knot_head({x, y}, "U"), do: {x, y + 1}
+  def move_knot_head({x, y}, "D"), do: {x, y - 1}
+
+  def move_toward(prev, current) do
+    if prev - current > 0, do: current + 1, else: current - 1
+  end
+
+  def move_knot({x_prev, y_prev}, {x, y}) do
+    cond do
+      abs(x_prev - x) <= 1 and abs(y_prev - y) <= 1 -> {x, y}
+      x == x_prev -> {x, move_toward(y_prev, y)}
+      y == y_prev -> {move_toward(x_prev, x), y}
+      true -> {move_toward(x_prev, x), move_toward(y_prev, y)}
+    end
   end
 end
